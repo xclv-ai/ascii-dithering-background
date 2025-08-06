@@ -291,6 +291,17 @@
             margin-top: 0.5rem;
         }
         
+        .compression-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #2563eb;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        
         .code-output {
             background: var(--teal-dark);
             color: #ecf0f1;
@@ -453,6 +464,7 @@
                     <label>Upload Image (Optional)</label>
                     <input type="file" id="imageUpload" accept="image/*">
                     <div id="imageInfo" class="image-info" style="display: none;"></div>
+                    <div id="compressionInfo" class="compression-info"></div>
                 </div>
                 
                 <div class="control-group">
@@ -522,11 +534,11 @@
             <div class="preview-panel">
                 <div class="preview-header">
                     <h2 class="preview-title">Preview</h2>
-                    <div class="status-badge" id="previewStatus">Pattern</div>
+                    <div class="status-badge pattern" id="previewStatus">Pattern</div>
                 </div>
                 
                 <div class="canvas-container">
-                    <canvas id="previewCanvas" width="800" height="500"></canvas>
+                    <canvas id="previewCanvas" width="1200" height="750"></canvas>
                     <canvas id="hiddenCanvas" style="display: none;"></canvas>
                 </div>
                 
@@ -552,7 +564,7 @@
         
         // Global state
         let uploadedImage = null;
-        let processedImageData = null; // Store processed image data for code generation
+        let compressedImageData = null; // Store compressed brightness data
         let currentSettings = {
             characterSet: 'default',
             color: '#000000',
@@ -590,12 +602,108 @@
                         document.getElementById('imageInfo').textContent = `✓ Image loaded: ${img.width}×${img.height}px`;
                         document.getElementById('previewStatus').textContent = 'Image';
                         document.getElementById('previewStatus').className = 'status-badge image';
+                        
+                        // Process and compress image
+                        compressImageData();
                         drawPreview();
                     };
                     img.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             }
+        }
+        
+        function compressImageData() {
+            if (!uploadedImage) return;
+            
+            // Use a sampling grid for compression
+            const sampleWidth = 64; // Sample points across width
+            const sampleHeight = 64; // Sample points across height
+            
+            // Setup hidden canvas for sampling
+            hiddenCanvas.width = canvas.width;
+            hiddenCanvas.height = canvas.height;
+            
+            // Draw image maintaining aspect ratio
+            const aspectRatio = uploadedImage.width / uploadedImage.height;
+            const canvasRatio = canvas.width / canvas.height;
+            
+            let drawWidth, drawHeight, drawX, drawY;
+            if (aspectRatio > canvasRatio) {
+                drawWidth = canvas.width;
+                drawHeight = canvas.width / aspectRatio;
+                drawX = 0;
+                drawY = (canvas.height - drawHeight) / 2;
+            } else {
+                drawWidth = canvas.height * aspectRatio;
+                drawHeight = canvas.height;
+                drawX = (canvas.width - drawWidth) / 2;
+                drawY = 0;
+            }
+            
+            hiddenCtx.fillStyle = '#ffffff';
+            hiddenCtx.fillRect(0, 0, canvas.width, canvas.height);
+            hiddenCtx.drawImage(uploadedImage, drawX, drawY, drawWidth, drawHeight);
+            
+            const imageData = hiddenCtx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Create compressed brightness map
+            const brightnessMap = [];
+            const stepX = canvas.width / sampleWidth;
+            const stepY = canvas.height / sampleHeight;
+            
+            for (let gy = 0; gy < sampleHeight; gy++) {
+                for (let gx = 0; gx < sampleWidth; gx++) {
+                    const centerX = Math.floor(gx * stepX + stepX / 2);
+                    const centerY = Math.floor(gy * stepY + stepY / 2);
+                    
+                    // Sample area around center point
+                    let totalBrightness = 0;
+                    let pixelCount = 0;
+                    const sampleRadius = Math.max(1, Math.floor(Math.min(stepX, stepY) / 4));
+                    
+                    for (let dy = -sampleRadius; dy <= sampleRadius; dy++) {
+                        for (let dx = -sampleRadius; dx <= sampleRadius; dx++) {
+                            const px = Math.max(0, Math.min(canvas.width - 1, centerX + dx));
+                            const py = Math.max(0, Math.min(canvas.height - 1, centerY + dy));
+                            const index = (py * canvas.width + px) * 4;
+                            
+                            const r = imageData.data[index] || 0;
+                            const g = imageData.data[index + 1] || 0;
+                            const b = imageData.data[index + 2] || 0;
+                            totalBrightness += (r + g + b) / 3;
+                            pixelCount++;
+                        }
+                    }
+                    
+                    const avgBrightness = totalBrightness / pixelCount;
+                    const intensity = 1 - (avgBrightness / 255); // Invert for ASCII
+                    
+                    // Only store significant brightness points
+                    if (intensity > 0.05) {
+                        brightnessMap.push({
+                            x: gx / (sampleWidth - 1), // Normalized coordinates
+                            y: gy / (sampleHeight - 1),
+                            i: Math.round(intensity * 100) / 100 // Rounded intensity
+                        });
+                    }
+                }
+            }
+            
+            compressedImageData = brightnessMap;
+            
+            // Show compression info
+            const compressionInfo = document.getElementById('compressionInfo');
+            compressionInfo.style.display = 'block';
+            const originalSize = sampleWidth * sampleHeight;
+            const compressedSize = brightnessMap.length;
+            const compressionRatio = Math.round((compressedSize / originalSize) * 100);
+            const estimatedFileSize = Math.round(JSON.stringify(brightnessMap).length / 1024 * 1.5); // Rough JS size estimate
+            
+            compressionInfo.innerHTML = `
+                ⚡ Compressed: ${compressedSize}/${originalSize} points (${compressionRatio}%)<br>
+                📦 Estimated JS size: ~${estimatedFileSize}KB
+            `;
         }
         
         function updateSettings() {
@@ -625,108 +733,78 @@
             const chars = charSets[currentSettings.characterSet];
             const spacing = Math.max(4, 20 - (currentSettings.density * 0.16));
             
-            if (uploadedImage) {
-                // Process uploaded image
-                hiddenCanvas.width = canvas.width;
-                hiddenCanvas.height = canvas.height;
-                
-                // Draw image maintaining aspect ratio
-                const aspectRatio = uploadedImage.width / uploadedImage.height;
-                const canvasRatio = canvas.width / canvas.height;
-                
-                let drawWidth, drawHeight, drawX, drawY;
-                if (aspectRatio > canvasRatio) {
-                    drawWidth = canvas.width;
-                    drawHeight = canvas.width / aspectRatio;
-                    drawX = 0;
-                    drawY = (canvas.height - drawHeight) / 2;
-                } else {
-                    drawWidth = canvas.height * aspectRatio;
-                    drawHeight = canvas.height;
-                    drawX = (canvas.width - drawWidth) / 2;
-                    drawY = 0;
-                }
-                
-                hiddenCtx.fillStyle = '#ffffff';
-                hiddenCtx.fillRect(0, 0, canvas.width, canvas.height);
-                hiddenCtx.drawImage(uploadedImage, drawX, drawY, drawWidth, drawHeight);
-                
-                const imageData = hiddenCtx.getImageData(0, 0, canvas.width, canvas.height);
-                
-                // Store processed data for code generation
-                processedImageData = {
-                    width: canvas.width,
-                    height: canvas.height,
-                    spacing: spacing,
-                    aspectRatio: aspectRatio,
-                    drawWidth: drawWidth,
-                    drawHeight: drawHeight,
-                    drawX: drawX,
-                    drawY: drawY
-                };
-                
-                // Convert to ASCII and store character positions
-                const asciiMap = [];
-                for (let y = 0; y < canvas.height - currentSettings.fontSize; y += spacing) {
-                    for (let x = 0; x < canvas.width - currentSettings.fontSize; x += spacing) {
-                        let totalBrightness = 0;
-                        let pixelCount = 0;
-                        
-                        // Sample area
-                        for (let py = Math.floor(y); py < Math.floor(y) + spacing && py < canvas.height; py++) {
-                            for (let px = Math.floor(x); px < Math.floor(x) + spacing && px < canvas.width; px++) {
-                                const index = (py * canvas.width + px) * 4;
-                                if (index < imageData.data.length) {
-                                    const r = imageData.data[index] || 0;
-                                    const g = imageData.data[index + 1] || 0;
-                                    const b = imageData.data[index + 2] || 0;
-                                    totalBrightness += (r + g + b) / 3;
-                                    pixelCount++;
-                                }
-                            }
-                        }
-                        
-                        if (pixelCount > 0) {
-                            const avgBrightness = totalBrightness / pixelCount;
-                            const intensity = 1 - (avgBrightness / 255);
-                            
-                            if (intensity > 0.1) {
-                                const charIndex = Math.floor(intensity * (chars.length - 1));
-                                const char = chars[Math.max(0, Math.min(chars.length - 1, charIndex))];
-                                if (char && char !== ' ') {
-                                    ctx.fillText(char, x, y);
-                                    // Store for code generation
-                                    asciiMap.push({
-                                        x: x / canvas.width, // Store as relative positions
-                                        y: y / canvas.height,
-                                        char: char,
-                                        intensity: intensity
-                                    });
-                                }
-                            }
+            if (compressedImageData) {
+                // Render from compressed image data
+                renderFromCompressedData(chars, spacing);
+            } else {
+                // Default circular pattern
+                renderCircularPattern(chars, spacing);
+            }
+        }
+        
+        function renderFromCompressedData(chars, spacing) {
+            // Use bilinear interpolation for smooth rendering
+            for (let y = 0; y < canvas.height - currentSettings.fontSize; y += spacing) {
+                for (let x = 0; x < canvas.width - currentSettings.fontSize; x += spacing) {
+                    const normalizedX = x / canvas.width;
+                    const normalizedY = y / canvas.height;
+                    
+                    const intensity = interpolateBrightness(normalizedX, normalizedY);
+                    
+                    if (intensity > 0.1) {
+                        const charIndex = Math.floor(intensity * (chars.length - 1));
+                        const char = chars[Math.max(0, Math.min(chars.length - 1, charIndex))];
+                        if (char && char !== ' ') {
+                            ctx.fillText(char, x, y);
                         }
                     }
                 }
+            }
+        }
+        
+        function interpolateBrightness(x, y) {
+            if (!compressedImageData || compressedImageData.length === 0) return 0;
+            
+            // Find nearest sample points for interpolation
+            let minDist = Infinity;
+            let closestIntensity = 0;
+            
+            // Simple distance-weighted interpolation
+            let totalWeight = 0;
+            let weightedIntensity = 0;
+            
+            for (const point of compressedImageData) {
+                const dx = x - point.x;
+                const dy = y - point.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                // Store ASCII map for code generation
-                processedImageData.asciiMap = asciiMap;
-            } else {
-                // Default circular pattern
-                processedImageData = null;
-                for (let y = 0; y < canvas.height - currentSettings.fontSize; y += spacing) {
-                    for (let x = 0; x < canvas.width - currentSettings.fontSize; x += spacing) {
-                        const centerX = canvas.width / 2;
-                        const centerY = canvas.height / 2;
-                        const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-                        const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
-                        const intensity = Math.max(0, 1 - (distance / maxDistance));
-                        
-                        if (intensity > 0.2) {
-                            const charIndex = Math.floor(intensity * (chars.length - 1));
-                            const char = chars[Math.max(0, Math.min(chars.length - 1, charIndex))];
-                            if (char && char !== ' ') {
-                                ctx.fillText(char, x, y);
-                            }
+                if (distance < 0.01) {
+                    // Very close, use direct value
+                    return point.i;
+                }
+                
+                const weight = 1 / (1 + distance * 10); // Inverse distance weighting
+                totalWeight += weight;
+                weightedIntensity += point.i * weight;
+            }
+            
+            return totalWeight > 0 ? weightedIntensity / totalWeight : 0;
+        }
+        
+        function renderCircularPattern(chars, spacing) {
+            for (let y = 0; y < canvas.height - currentSettings.fontSize; y += spacing) {
+                for (let x = 0; x < canvas.width - currentSettings.fontSize; x += spacing) {
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                    const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
+                    const intensity = Math.max(0, 1 - (distance / maxDistance));
+                    
+                    if (intensity > 0.2) {
+                        const charIndex = Math.floor(intensity * (chars.length - 1));
+                        const char = chars[Math.max(0, Math.min(chars.length - 1, charIndex))];
+                        if (char && char !== ' ') {
+                            ctx.fillText(char, x, y);
                         }
                     }
                 }
@@ -851,6 +929,10 @@
         toggle: function() {
             canvas.style.display = canvas.style.display === 'none' ? 'block' : 'none';
         },
+        updateConfig: function(newConfig) {
+            Object.assign(config, newConfig);
+            draw();
+        },
         element: targetElement,
         canvas: canvas
     };
@@ -870,18 +952,46 @@
         },
         toggle: function() {
             canvas.style.display = canvas.style.display === 'none' ? 'block' : 'none';
+        },
+        updateConfig: function(newConfig) {
+            Object.assign(config, newConfig);
+            draw();
         }
     };
     
     console.log('ASCII Dithering Background loaded');`;
             
-            // Generate draw function based on whether we have processed image data
+            // Generate draw function based on whether we have compressed image data
             let drawFunction;
             
-            if (processedImageData && processedImageData.asciiMap) {
-                // Generate code for uploaded image
-                const asciiMapString = JSON.stringify(processedImageData.asciiMap, null, 8);
+            if (compressedImageData && compressedImageData.length > 0) {
+                // Generate code for compressed image data
+                const compressedDataString = JSON.stringify(compressedImageData);
                 drawFunction = `
+    // Interpolation function for smooth brightness transitions
+    function interpolateBrightness(x, y, imageData) {
+        if (!imageData || imageData.length === 0) return 0;
+        
+        let totalWeight = 0;
+        let weightedIntensity = 0;
+        
+        for (const point of imageData) {
+            const dx = x - point.x;
+            const dy = y - point.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 0.01) {
+                return point.i;
+            }
+            
+            const weight = 1 / (1 + distance * 10);
+            totalWeight += weight;
+            weightedIntensity += point.i * weight;
+        }
+        
+        return totalWeight > 0 ? weightedIntensity / totalWeight : 0;
+    }
+    
     function draw() {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -890,14 +1000,27 @@
         ctx.fillStyle = config.color;
         ctx.textBaseline = 'top';
         
-        // ASCII map generated from uploaded image
-        const asciiMap = ${asciiMapString};
+        // Compressed image brightness data
+        const imageData = ${compressedDataString};
         
-        // Draw characters at relative positions
-        for (const charData of asciiMap) {
-            const x = charData.x * canvas.width;
-            const y = charData.y * canvas.height;
-            ctx.fillText(charData.char, x, y);
+        const spacing = Math.max(4, 20 - (config.density * 0.16));
+        
+        // Render using interpolated brightness values
+        for (let y = 0; y < canvas.height - config.fontSize; y += spacing) {
+            for (let x = 0; x < canvas.width - config.fontSize; x += spacing) {
+                const normalizedX = x / canvas.width;
+                const normalizedY = y / canvas.height;
+                
+                const intensity = interpolateBrightness(normalizedX, normalizedY, imageData);
+                
+                if (intensity > 0.1) {
+                    const charIndex = Math.floor(intensity * (config.chars.length - 1));
+                    const char = config.chars[Math.max(0, Math.min(config.chars.length - 1, charIndex))];
+                    if (char && char !== ' ') {
+                        ctx.fillText(char, x, y);
+                    }
+                }
+            }
         }
     }`;
             } else {
@@ -911,8 +1034,10 @@
         ctx.fillStyle = config.color;
         ctx.textBaseline = 'top';
         
-        for (let y = 0; y < canvas.height; y += config.spacing) {
-            for (let x = 0; x < canvas.width; x += config.spacing) {
+        const spacing = Math.max(4, 20 - (config.density * 0.16));
+        
+        for (let y = 0; y < canvas.height - config.fontSize; y += spacing) {
+            for (let x = 0; x < canvas.width - config.fontSize; x += spacing) {
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2;
                 const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
@@ -934,17 +1059,18 @@
             
             return `// ASCII Dithering Background - ${isElement ? 'Element Specific' : 'Full Page'} Version
 // Generated for ${isElement ? targetSelector : 'full page background'}
-${processedImageData ? '// Based on uploaded image' : '// Using default circular pattern'}
+${compressedImageData ? '// Based on uploaded image with smart compression' : '// Using default circular pattern'}
+// Resolution-independent with full runtime control
 
 (function() {
     'use strict';
     
-    // Configuration
+    // Configuration - All parameters can be changed at runtime
     const config = {
         chars: ${JSON.stringify(chars)},
         fontSize: ${currentSettings.fontSize},
         color: '${currentSettings.color}',
-        spacing: ${spacing.toFixed(1)},
+        density: ${currentSettings.density}, // Used in spacing calculation
         zIndex: ${isElement ? '0' : '-1000'},
         opacity: ${isElement ? '0.15' : '0.3'}
     };${elementSpecificCode}${canvasSetup}
@@ -964,7 +1090,7 @@ ${processedImageData ? '// Based on uploaded image' : '// Using default circular
         function downloadFullPageJS() {
             generateFullPageCode();
             const code = document.getElementById('codeContent').textContent;
-            const filename = processedImageData ? 'ascii-background-image-fullpage.js' : 'ascii-background-pattern-fullpage.js';
+            const filename = compressedImageData ? 'ascii-background-image-fullpage.js' : 'ascii-background-pattern-fullpage.js';
             downloadFile(code, filename);
         }
         
@@ -977,7 +1103,7 @@ ${processedImageData ? '// Based on uploaded image' : '// Using default circular
             
             generateElementCode();
             const code = document.getElementById('codeContent').textContent;
-            const baseFilename = processedImageData ? 'image' : 'pattern';
+            const baseFilename = compressedImageData ? 'image' : 'pattern';
             const fileName = `ascii-background-${baseFilename}-element-${targetEl.replace(/[^a-zA-Z0-9]/g, '-')}.js`;
             downloadFile(code, fileName);
         }
@@ -996,7 +1122,7 @@ ${processedImageData ? '// Based on uploaded image' : '// Using default circular
             canvas.toBlob((blob) => {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                const filename = processedImageData ? `ascii-image-pattern-${Date.now()}.png` : `ascii-default-pattern-${Date.now()}.png`;
+                const filename = compressedImageData ? `ascii-image-pattern-${Date.now()}.png` : `ascii-default-pattern-${Date.now()}.png`;
                 link.download = filename;
                 link.href = url;
                 link.click();
