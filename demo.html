@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Dithering Background - Demo</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 50px 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 60px 40px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .hero h1 {
+            font-size: 3rem;
+            margin: 0 0 20px 0;
+            color: #333;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            color: #666;
+            margin: 0 0 30px 0;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button.secondary {
+            background: #6c757d;
+        }
+        
+        button.secondary:hover {
+            background: #545b62;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        
+        .slider-container label {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input[type="range"] {
+            width: 100px;
+        }
+        
+        .content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            margin: 40px 0;
+            line-height: 1.6;
+        }
+        
+        .content h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        
+        .code-block code {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .slider-container {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ASCII Dithering Background -->
+    <script src="https://cdn.jsdelivr.net/gh/xclv-ai/ascii-dithering-background@main/ascii-background.js"></script>
+    
+    <div class="container">
+        <div class="hero">
+            <h1>ASCII Dithering Background</h1>
+            <p>Experience the mesmerizing beauty of ASCII art as your website background</p>
+            
+            <div class="controls">
+                <button onclick="ASCIIDithering.toggle()">Toggle Background</button>
+                <button onclick="ASCIIDithering.remove()" class="secondary">Remove</button>
+                <button onclick="changePreset('dots')">Dots</button>
+                <button onclick="changePreset('blocks')">Blocks</button>
+                <button onclick="changePreset('classic')">Classic</button>
+                
+                <div class="slider-container">
+                    <label>Opacity:</label>
+                    <input type="range" min="0" max="1" step="0.1" value="0.3" 
+                           onchange="ASCIIDithering.setOpacity(this.value)">
+                </div>
+                
+                <div class="slider-container">
+                    <label>Color:</label>
+                    <input type="color" value="#000000" 
+                           onchange="ASCIIDithering.setColor(this.value)">
+                </div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <h2>🚀 One-Line Integration</h2>
+            <p>Add this ASCII dithering background to any website with just one line of code:</p>
+            
+            <div class="code-block">
+                <code>&lt;script src="https://cdn.jsdelivr.net/gh/xclv-ai/ascii-dithering-background@main/ascii-background.js"&gt;&lt;/script&gt;</code>
+            </div>
+            
+            <p>That's it! The background automatically appears behind your content without affecting your existing layout.</p>
+        </div>
+        
+        <div class="content">
+            <h2>✨ Features</h2>
+            <ul>
+                <li><strong>Zero Dependencies:</strong> Pure vanilla JavaScript, no frameworks needed</li>
+                <li><strong>Lightweight:</strong> Less than 5KB minified</li>
+                <li><strong>Responsive:</strong> Automatically adapts to any screen size</li>
+                <li><strong>Non-intrusive:</strong> Won't break your existing CSS or JavaScript</li>
+                <li><strong>Customizable:</strong> Easy to modify colors, patterns, and opacity</li>
+                <li><strong>Performance Optimized:</strong> Uses canvas for smooth rendering</li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <h2>🎮 Control Functions</h2>
+            <p>Programmatically control the background after it loads:</p>
+            
+            <div class="code-block">
+                <code>// Change opacity (0 = invisible, 1 = fully visible)<br>
+ASCIIDithering.setOpacity(0.5);<br><br>
+// Change color<br>
+ASCIIDithering.setColor('#ff0000');<br><br>
+// Toggle visibility<br>
+ASCIIDithering.toggle();<br><br>
+// Remove completely<br>
+ASCIIDithering.remove();</code>
+            </div>
+        </div>
+        
+        <div class="content">
+            <h2>🎨 Presets</h2>
+            <p>Try different character sets for various effects:</p>
+            
+            <div class="code-block">
+                <code>// Minimalist dots<br>
+&lt;script src="https://cdn.jsdelivr.net/gh/xclv-ai/ascii-dithering-background@main/presets/dots.js"&gt;&lt;/script&gt;<br><br>
+// Modern blocks<br>
+&lt;script src="https://cdn.jsdelivr.net/gh/xclv-ai/ascii-dithering-background@main/presets/blocks.js"&gt;&lt;/script&gt;</code>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function changePreset(type) {
+            const presets = {
+                classic: [' ', '.', ':', ';', '+', '*', '#', '@'],
+                dots: [' ', '.', '•', '●'],
+                blocks: [' ', '░', '▒', '▓', '█']
+            };
+            
+            if (presets[type]) {
+                ASCIIDithering.setChars(presets[type]);
+            }
+        }
+        
+        // Set initial opacity to be more visible for demo
+        setTimeout(() => {
+            ASCIIDithering.setOpacity(0.3);
+        }, 100);
+    </script>
+</body>
+</html>
