@@ -42,7 +42,7 @@
         
         .main-grid {
             display: grid;
-            grid-template-columns: 320px 1fr;
+            grid-template-columns: 350px 1fr;
             gap: 30px;
             align-items: start;
         }
@@ -87,6 +87,16 @@
         
         .control-group input[type="file"]:hover {
             border-color: #3498db;
+        }
+        
+        .control-group input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
         }
         
         .control-group select {
@@ -183,6 +193,16 @@
             transform: translateY(-1px);
         }
         
+        .button-warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .button-warning:hover {
+            background: #d68910;
+            transform: translateY(-1px);
+        }
+        
         .button-secondary {
             background: #95a5a6;
             color: white;
@@ -252,6 +272,41 @@
             cursor: pointer;
         }
         
+        .option-divider {
+            margin: 30px 0;
+            padding: 20px 0;
+            border-top: 2px solid #ecf0f1;
+            position: relative;
+        }
+        
+        .option-divider::before {
+            content: 'OR';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: #7f8c8d;
+            padding: 0 15px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        .option-title {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .helper-text {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
         @media (max-width: 768px) {
             .main-grid {
                 grid-template-columns: 1fr;
@@ -313,13 +368,33 @@
                     <input type="range" id="fontSizeSlider" min="4" max="16" value="8">
                 </div>
                 
-                <button class="button button-primary" onclick="generateCode()">
-                    📝 Generate Code
+                <div class="option-title">🌍 Full Page Background</div>
+                <button class="button button-primary" onclick="generateFullPageCode()">
+                    📝 Generate Full Page Code
                 </button>
                 
-                <button class="button button-success" onclick="downloadJS()">
-                    💾 Download .JS File
+                <button class="button button-success" onclick="downloadFullPageJS()">
+                    💾 Download Full Page .JS
                 </button>
+                
+                <div class="option-divider"></div>
+                
+                <div class="option-title">🎯 Specific Element Background</div>
+                <div class="control-group">
+                    <label>Target Element (CSS Selector)</label>
+                    <input type="text" id="targetElement" placeholder=".input-section" value=".input-section">
+                    <div class="helper-text">Example: .my-class, #my-id, section.hero</div>
+                </div>
+                
+                <button class="button button-warning" onclick="generateElementCode()">
+                    📝 Generate Element Code
+                </button>
+                
+                <button class="button button-success" onclick="downloadElementJS()">
+                    💾 Download Element .JS
+                </button>
+                
+                <div class="option-divider"></div>
                 
                 <button class="button button-secondary" onclick="downloadPNG()">
                     🖼️ Download PNG
@@ -335,7 +410,7 @@
                 
                 <div id="codeOutput" class="code-output">
                     <div class="code-header">
-                        <span class="code-title">Generated JavaScript Code</span>
+                        <span class="code-title" id="codeTitle">Generated JavaScript Code</span>
                         <button class="copy-button" onclick="copyCode()">Copy</button>
                     </div>
                     <div id="codeContent"></div>
@@ -359,7 +434,8 @@
             characterSet: 'default',
             color: '#000000',
             density: 50,
-            fontSize: 8
+            fontSize: 8,
+            targetElement: '.input-section'
         };
         
         // Canvas elements
@@ -377,6 +453,7 @@
         document.getElementById('colorPicker').addEventListener('change', updateSettings);
         document.getElementById('densitySlider').addEventListener('input', updateSettings);
         document.getElementById('fontSizeSlider').addEventListener('input', updateSettings);
+        document.getElementById('targetElement').addEventListener('input', updateSettings);
         
         function handleImageUpload(event) {
             const file = event.target.files[0];
@@ -401,6 +478,7 @@
             currentSettings.color = document.getElementById('colorPicker').value;
             currentSettings.density = parseInt(document.getElementById('densitySlider').value);
             currentSettings.fontSize = parseInt(document.getElementById('fontSizeSlider').value);
+            currentSettings.targetElement = document.getElementById('targetElement').value;
             
             // Update display values
             document.getElementById('densityValue').textContent = currentSettings.density + '%';
@@ -506,33 +584,80 @@
             }
         }
         
-        function generateCode() {
+        function generateFullPageCode() {
             const chars = charSets[currentSettings.characterSet];
             const spacing = Math.max(4, 20 - (currentSettings.density * 0.16));
             
-            const jsCode = `// ASCII Dithering Background - Generated Code
-// Paste this script into any website's HTML
-
-(function() {
-    'use strict';
+            const jsCode = generateBaseCode(chars, spacing, false);
+            
+            document.getElementById('codeTitle').textContent = 'Full Page Background Code';
+            document.getElementById('codeContent').textContent = jsCode;
+            document.getElementById('codeOutput').style.display = 'block';
+            document.getElementById('codeOutput').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function generateElementCode() {
+            const targetEl = currentSettings.targetElement.trim();
+            if (!targetEl) {
+                alert('Please enter a target element selector (e.g., .input-section)');
+                return;
+            }
+            
+            const chars = charSets[currentSettings.characterSet];
+            const spacing = Math.max(4, 20 - (currentSettings.density * 0.16));
+            
+            const jsCode = generateBaseCode(chars, spacing, true, targetEl);
+            
+            document.getElementById('codeTitle').textContent = `Element Background Code for "${targetEl}"`;
+            document.getElementById('codeContent').textContent = jsCode;
+            document.getElementById('codeOutput').style.display = 'block';
+            document.getElementById('codeOutput').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function generateBaseCode(chars, spacing, isElement, targetSelector = '') {
+            const elementSpecificCode = isElement ? `
+    // TARGET ELEMENT VERSION - Find your specific element
+    const targetElement = document.querySelector('${targetSelector}');
+    if (!targetElement) {
+        console.warn('Element "${targetSelector}" not found');
+        return;
+    }
     
-    // Configuration
-    const config = {
-        chars: ${JSON.stringify(chars)},
-        fontSize: ${currentSettings.fontSize},
-        color: '${currentSettings.color}',
-        spacing: ${spacing.toFixed(1)},
-        zIndex: -1000,
-        opacity: 0.3
-    };
-    
+    // Prevent multiple instances for this element
+    if (targetElement.querySelector('#ascii-element-bg')) {
+        console.warn('ASCII Background already exists for ${targetSelector}');
+        return;
+    }` : `
+    // FULL PAGE VERSION
     // Prevent multiple instances
     if (document.getElementById('ascii-dithering-bg')) {
         console.warn('ASCII Dithering Background already loaded');
         return;
+    }`;
+            
+            const canvasSetup = isElement ? `
+    // Create canvas for element
+    const canvas = document.createElement('canvas');
+    canvas.id = 'ascii-element-bg';
+    canvas.style.cssText = \`
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: \${config.zIndex};
+        opacity: \${config.opacity};
+        pointer-events: none;
+    \`;
+    
+    // Ensure parent has relative positioning
+    if (getComputedStyle(targetElement).position === 'static') {
+        targetElement.style.position = 'relative';
     }
     
-    // Create canvas
+    // Insert canvas into target element
+    targetElement.insertBefore(canvas, targetElement.firstChild);` : `
+    // Create canvas for full page
     const canvas = document.createElement('canvas');
     canvas.id = 'ascii-dithering-bg';
     canvas.style.cssText = \`
@@ -546,14 +671,78 @@
         pointer-events: none;
     \`;
     
-    document.body.insertBefore(canvas, document.body.firstChild);
-    const ctx = canvas.getContext('2d');
-    
+    document.body.insertBefore(canvas, document.body.firstChild);`;
+            
+            const resizeFunction = isElement ? `
+    function resize() {
+        canvas.width = targetElement.offsetWidth;
+        canvas.height = targetElement.offsetHeight;
+        draw();
+    }` : `
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         draw();
-    }
+    }`;
+            
+            const controlObject = isElement ? `
+    // Control object for element background
+    const controlName = 'ASCII_' + '${targetSelector}'.replace(/[^a-zA-Z0-9]/g, '_');
+    window[controlName] = {
+        remove: function() {
+            canvas.remove();
+            window.removeEventListener('resize', resize);
+            delete window[controlName];
+        },
+        setOpacity: function(opacity) {
+            if (opacity >= 0 && opacity <= 1) {
+                canvas.style.opacity = opacity;
+            }
+        },
+        toggle: function() {
+            canvas.style.display = canvas.style.display === 'none' ? 'block' : 'none';
+        },
+        element: targetElement,
+        canvas: canvas
+    };
+    
+    console.log('ASCII Background loaded for ${targetSelector}. Control via window[' + controlName + ']');` : `
+    // Global control object
+    window.ASCIIDithering = {
+        remove: function() {
+            canvas.remove();
+            window.removeEventListener('resize', resize);
+            delete window.ASCIIDithering;
+        },
+        setOpacity: function(opacity) {
+            if (opacity >= 0 && opacity <= 1) {
+                canvas.style.opacity = opacity;
+            }
+        },
+        toggle: function() {
+            canvas.style.display = canvas.style.display === 'none' ? 'block' : 'none';
+        }
+    };
+    
+    console.log('ASCII Dithering Background loaded');`;
+            
+            return `// ASCII Dithering Background - ${isElement ? 'Element Specific' : 'Full Page'} Version
+// Generated for ${isElement ? targetSelector : 'full page background'}
+
+(function() {
+    'use strict';
+    
+    // Configuration
+    const config = {
+        chars: ${JSON.stringify(chars)},
+        fontSize: ${currentSettings.fontSize},
+        color: '${currentSettings.color}',
+        spacing: ${spacing.toFixed(1)},
+        zIndex: ${isElement ? '0' : '-1000'},
+        opacity: ${isElement ? '0.15' : '0.3'}
+    };${elementSpecificCode}${canvasSetup}
+    
+    const ctx = canvas.getContext('2d');${resizeFunction}
     
     function draw() {
         ctx.fillStyle = '#ffffff';
@@ -589,47 +778,34 @@
         resize();
     }
     
-    window.addEventListener('resize', resize);
-    
-    // Global control object
-    window.ASCIIDithering = {
-        remove: function() {
-            const el = document.getElementById('ascii-dithering-bg');
-            if (el) {
-                el.remove();
-                window.removeEventListener('resize', resize);
-            }
-        },
-        setOpacity: function(opacity) {
-            const el = document.getElementById('ascii-dithering-bg');
-            if (el && opacity >= 0 && opacity <= 1) {
-                el.style.opacity = opacity;
-            }
-        },
-        toggle: function() {
-            const el = document.getElementById('ascii-dithering-bg');
-            if (el) {
-                el.style.display = el.style.display === 'none' ? 'block' : 'none';
-            }
-        }
-    };
-    
-    console.log('ASCII Dithering Background loaded');
+    window.addEventListener('resize', resize);${controlObject}
 })();`;
-            
-            document.getElementById('codeContent').textContent = jsCode;
-            document.getElementById('codeOutput').style.display = 'block';
-            document.getElementById('codeOutput').scrollIntoView({ behavior: 'smooth' });
         }
         
-        function downloadJS() {
-            generateCode(); // Ensure code is generated
+        function downloadFullPageJS() {
+            generateFullPageCode();
             const code = document.getElementById('codeContent').textContent;
+            downloadFile(code, 'ascii-background-fullpage.js');
+        }
+        
+        function downloadElementJS() {
+            const targetEl = currentSettings.targetElement.trim();
+            if (!targetEl) {
+                alert('Please enter a target element selector first');
+                return;
+            }
             
-            const blob = new Blob([code], { type: 'application/javascript' });
+            generateElementCode();
+            const code = document.getElementById('codeContent').textContent;
+            const fileName = `ascii-background-element-${targetEl.replace(/[^a-zA-Z0-9]/g, '-')}.js`;
+            downloadFile(code, fileName);
+        }
+        
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'application/javascript' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.download = `ascii-background-${Date.now()}.js`;
+            link.download = filename;
             link.href = url;
             link.click();
             URL.revokeObjectURL(url);
@@ -656,6 +832,15 @@
                     button.textContent = originalText;
                 }, 2000);
             });
+        }
+        
+        // Legacy functions for compatibility
+        function generateCode() {
+            generateFullPageCode();
+        }
+        
+        function downloadJS() {
+            downloadFullPageJS();
         }
     </script>
 </body>
