@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Dithering Background Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+        
+        .controls-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+        }
+        
+        .preview-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .control-group input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .control-group input[type="file"]:hover {
+            border-color: #3498db;
+        }
+        
+        .control-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+        }
+        
+        .control-group input[type="color"] {
+            width: 100%;
+            height: 45px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .slider-group {
+            margin-bottom: 20px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .slider-value {
+            color: #3498db;
+            font-weight: 700;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ecf0f1;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+        }
+        
+        .button-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .button-primary:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+        
+        .button-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .button-success:hover {
+            background: #219a52;
+            transform: translateY(-1px);
+        }
+        
+        .button-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .button-secondary:hover {
+            background: #7f8c8d;
+            transform: translateY(-1px);
+        }
+        
+        .canvas-container {
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+        
+        canvas {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .image-info {
+            background: #d5edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .code-output {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .code-title {
+            color: #3498db;
+            font-weight: 600;
+        }
+        
+        .copy-button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls-panel {
+                position: static;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ASCII Dithering Background Generator</h1>
+            <p>Create custom ASCII character backgrounds for any website</p>
+        </div>
+        
+        <div class="main-grid">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label>Upload Image (Optional)</label>
+                    <input type="file" id="imageUpload" accept="image/*">
+                    <div id="imageInfo" class="image-info" style="display: none;"></div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Character Set</label>
+                    <select id="characterSet">
+                        <option value="default">Default (.,:;+*#@)</option>
+                        <option value="dots">Dots ( .•●)</option>
+                        <option value="symbols">Symbols (.,:;!*#&@)</option>
+                        <option value="blocks">Blocks ( ░▒▓█)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>Color</label>
+                    <input type="color" id="colorPicker" value="#000000">
+                </div>
+                
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Density</span>
+                        <span class="slider-value" id="densityValue">50%</span>
+                    </div>
+                    <input type="range" id="densitySlider" min="20" max="100" value="50">
+                </div>
+                
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Font Size</span>
+                        <span class="slider-value" id="fontSizeValue">8px</span>
+                    </div>
+                    <input type="range" id="fontSizeSlider" min="4" max="16" value="8">
+                </div>
+                
+                <button class="button button-primary" onclick="generateCode()">
+                    📝 Generate Code
+                </button>
+                
+                <button class="button button-success" onclick="downloadJS()">
+                    💾 Download .JS File
+                </button>
+                
+                <button class="button button-secondary" onclick="downloadPNG()">
+                    🖼️ Download PNG
+                </button>
+            </div>
+            
+            <div class="preview-panel">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">Preview</h2>
+                <div class="canvas-container">
+                    <canvas id="previewCanvas" width="800" height="500"></canvas>
+                    <canvas id="hiddenCanvas" style="display: none;"></canvas>
+                </div>
+                
+                <div id="codeOutput" class="code-output">
+                    <div class="code-header">
+                        <span class="code-title">Generated JavaScript Code</span>
+                        <button class="copy-button" onclick="copyCode()">Copy</button>
+                    </div>
+                    <div id="codeContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Character sets
+        const charSets = {
+            default: [' ', '.', ':', ';', '+', '*', '#', '@'],
+            dots: [' ', '.', '•', '●'],
+            symbols: [' ', '.', ':', ';', '!', '*', '#', '&', '@'],
+            blocks: [' ', '░', '▒', '▓', '█']
+        };
+        
+        // Global state
+        let uploadedImage = null;
+        let currentSettings = {
+            characterSet: 'default',
+            color: '#000000',
+            density: 50,
+            fontSize: 8
+        };
+        
+        // Canvas elements
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        const hiddenCanvas = document.getElementById('hiddenCanvas');
+        const hiddenCtx = hiddenCanvas.getContext('2d');
+        
+        // Initialize
+        drawPreview();
+        
+        // Event listeners
+        document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
+        document.getElementById('characterSet').addEventListener('change', updateSettings);
+        document.getElementById('colorPicker').addEventListener('change', updateSettings);
+        document.getElementById('densitySlider').addEventListener('input', updateSettings);
+        document.getElementById('fontSizeSlider').addEventListener('input', updateSettings);
+        
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        uploadedImage = img;
+                        document.getElementById('imageInfo').style.display = 'block';
+                        document.getElementById('imageInfo').textContent = `✓ Image loaded: ${img.width}×${img.height}px`;
+                        drawPreview();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function updateSettings() {
+            currentSettings.characterSet = document.getElementById('characterSet').value;
+            currentSettings.color = document.getElementById('colorPicker').value;
+            currentSettings.density = parseInt(document.getElementById('densitySlider').value);
+            currentSettings.fontSize = parseInt(document.getElementById('fontSizeSlider').value);
+            
+            // Update display values
+            document.getElementById('densityValue').textContent = currentSettings.density + '%';
+            document.getElementById('fontSizeValue').textContent = currentSettings.fontSize + 'px';
+            
+            drawPreview();
+        }
+        
+        function drawPreview() {
+            // Clear canvas
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Set font
+            ctx.font = currentSettings.fontSize + 'px monospace';
+            ctx.fillStyle = currentSettings.color;
+            ctx.textBaseline = 'top';
+            
+            const chars = charSets[currentSettings.characterSet];
+            const spacing = Math.max(4, 20 - (currentSettings.density * 0.16));
+            
+            if (uploadedImage) {
+                // Process uploaded image
+                hiddenCanvas.width = canvas.width;
+                hiddenCanvas.height = canvas.height;
+                
+                // Draw image maintaining aspect ratio
+                const aspectRatio = uploadedImage.width / uploadedImage.height;
+                const canvasRatio = canvas.width / canvas.height;
+                
+                let drawWidth, drawHeight, drawX, drawY;
+                if (aspectRatio > canvasRatio) {
+                    drawWidth = canvas.width;
+                    drawHeight = canvas.width / aspectRatio;
+                    drawX = 0;
+                    drawY = (canvas.height - drawHeight) / 2;
+                } else {
+                    drawWidth = canvas.height * aspectRatio;
+                    drawHeight = canvas.height;
+                    drawX = (canvas.width - drawWidth) / 2;
+                    drawY = 0;
+                }
+                
+                hiddenCtx.fillStyle = '#ffffff';
+                hiddenCtx.fillRect(0, 0, canvas.width, canvas.height);
+                hiddenCtx.drawImage(uploadedImage, drawX, drawY, drawWidth, drawHeight);
+                
+                const imageData = hiddenCtx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Convert to ASCII
+                for (let y = 0; y < canvas.height - currentSettings.fontSize; y += spacing) {
+                    for (let x = 0; x < canvas.width - currentSettings.fontSize; x += spacing) {
+                        let totalBrightness = 0;
+                        let pixelCount = 0;
+                        
+                        // Sample area
+                        for (let py = Math.floor(y); py < Math.floor(y) + spacing && py < canvas.height; py++) {
+                            for (let px = Math.floor(x); px < Math.floor(x) + spacing && px < canvas.width; px++) {
+                                const index = (py * canvas.width + px) * 4;
+                                if (index < imageData.data.length) {
+                                    const r = imageData.data[index] || 0;
+                                    const g = imageData.data[index + 1] || 0;
+                                    const b = imageData.data[index + 2] || 0;
+                                    totalBrightness += (r + g + b) / 3;
+                                    pixelCount++;
+                                }
+                            }
+                        }
+                        
+                        if (pixelCount > 0) {
+                            const avgBrightness = totalBrightness / pixelCount;
+                            const intensity = 1 - (avgBrightness / 255);
+                            
+                            if (intensity > 0.1) {
+                                const charIndex = Math.floor(intensity * (chars.length - 1));
+                                const char = chars[Math.max(0, Math.min(chars.length - 1, charIndex))];
+                                if (char && char !== ' ') {
+                                    ctx.fillText(char, x, y);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Default circular pattern
+                for (let y = 0; y < canvas.height - currentSettings.fontSize; y += spacing) {
+                    for (let x = 0; x < canvas.width - currentSettings.fontSize; x += spacing) {
+                        const centerX = canvas.width / 2;
+                        const centerY = canvas.height / 2;
+                        const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                        const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
+                        const intensity = Math.max(0, 1 - (distance / maxDistance));
+                        
+                        if (intensity > 0.2) {
+                            const charIndex = Math.floor(intensity * (chars.length - 1));
+                            const char = chars[Math.max(0, Math.min(chars.length - 1, charIndex))];
+                            if (char && char !== ' ') {
+                                ctx.fillText(char, x, y);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        function generateCode() {
+            const chars = charSets[currentSettings.characterSet];
+            const spacing = Math.max(4, 20 - (currentSettings.density * 0.16));
+            
+            const jsCode = `// ASCII Dithering Background - Generated Code
+// Paste this script into any website's HTML
+
+(function() {
+    'use strict';
+    
+    // Configuration
+    const config = {
+        chars: ${JSON.stringify(chars)},
+        fontSize: ${currentSettings.fontSize},
+        color: '${currentSettings.color}',
+        spacing: ${spacing.toFixed(1)},
+        zIndex: -1000,
+        opacity: 0.3
+    };
+    
+    // Prevent multiple instances
+    if (document.getElementById('ascii-dithering-bg')) {
+        console.warn('ASCII Dithering Background already loaded');
+        return;
+    }
+    
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    canvas.id = 'ascii-dithering-bg';
+    canvas.style.cssText = \`
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: \${config.zIndex};
+        opacity: \${config.opacity};
+        pointer-events: none;
+    \`;
+    
+    document.body.insertBefore(canvas, document.body.firstChild);
+    const ctx = canvas.getContext('2d');
+    
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        draw();
+    }
+    
+    function draw() {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.font = config.fontSize + 'px monospace';
+        ctx.fillStyle = config.color;
+        ctx.textBaseline = 'top';
+        
+        for (let y = 0; y < canvas.height; y += config.spacing) {
+            for (let x = 0; x < canvas.width; x += config.spacing) {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
+                const intensity = Math.max(0, 1 - (distance / maxDistance));
+                
+                if (intensity > 0.2) {
+                    const charIndex = Math.floor(intensity * (config.chars.length - 1));
+                    const char = config.chars[Math.max(0, Math.min(config.chars.length - 1, charIndex))];
+                    
+                    if (char && char !== ' ') {
+                        ctx.fillText(char, x, y);
+                    }
+                }
+            }
+        }
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', resize);
+    } else {
+        resize();
+    }
+    
+    window.addEventListener('resize', resize);
+    
+    // Global control object
+    window.ASCIIDithering = {
+        remove: function() {
+            const el = document.getElementById('ascii-dithering-bg');
+            if (el) {
+                el.remove();
+                window.removeEventListener('resize', resize);
+            }
+        },
+        setOpacity: function(opacity) {
+            const el = document.getElementById('ascii-dithering-bg');
+            if (el && opacity >= 0 && opacity <= 1) {
+                el.style.opacity = opacity;
+            }
+        },
+        toggle: function() {
+            const el = document.getElementById('ascii-dithering-bg');
+            if (el) {
+                el.style.display = el.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+    };
+    
+    console.log('ASCII Dithering Background loaded');
+})();`;
+            
+            document.getElementById('codeContent').textContent = jsCode;
+            document.getElementById('codeOutput').style.display = 'block';
+            document.getElementById('codeOutput').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function downloadJS() {
+            generateCode(); // Ensure code is generated
+            const code = document.getElementById('codeContent').textContent;
+            
+            const blob = new Blob([code], { type: 'application/javascript' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `ascii-background-${Date.now()}.js`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function downloadPNG() {
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = `ascii-pattern-${Date.now()}.png`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+        
+        function copyCode() {
+            const code = document.getElementById('codeContent').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const button = document.querySelector('.copy-button');
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
