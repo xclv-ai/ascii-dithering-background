@@ -6,6 +6,14 @@ Drop-in ASCII character dithering background for any website. One-line integrati
 ![License MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 ![No Dependencies](https://img.shields.io/badge/Dependencies-None-orange?style=for-the-badge)
 
+## 🎨 **[Live Generator Tool →](https://xclv-ai.github.io/ascii-dithering-background/)**
+
+**Create custom ASCII backgrounds with our interactive tool!**
+- ✨ Upload images and convert to ASCII
+- 🎮 Real-time preview and customization
+- 📥 Download ready-to-use .JS files
+- 🎯 No setup required - works instantly
+
 ## 🚀 Quick Start
 
 ### One-Line Integration (Recommended)
@@ -64,7 +72,13 @@ console.log(ASCIIDithering.config);
 
 ## 🎨 Customization
 
-### Method 1: Modify the Script
+### Method 1: Use Our Generator Tool
+
+**[Open the Live Generator →](https://xclv-ai.github.io/ascii-dithering-background/)**
+
+Upload your images, customize settings, and download ready-to-use .JS files!
+
+### Method 2: Modify the Script
 
 Download `ascii-background.js` and edit the config object:
 
@@ -79,7 +93,7 @@ const config = {
 };
 ```
 
-### Method 2: Runtime Customization
+### Method 3: Runtime Customization
 
 ```javascript
 // After the script loads, modify settings
@@ -167,6 +181,11 @@ The background automatically:
 - **Memory efficient** with automatic cleanup
 - **CSS positioning** ensures compatibility with existing layouts
 - **Monospace fonts** for consistent character spacing
+
+## 🌐 Live Tools
+
+- **[Generator Tool](https://xclv-ai.github.io/ascii-dithering-background/)** - Create custom backgrounds
+- **[Interactive Demo](https://xclv-ai.github.io/ascii-dithering-background/demo.html)** - See it in action
 
 ## 📄 License
 
