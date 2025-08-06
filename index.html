@@ -5,15 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ASCII Dithering Background Generator</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
+        :root {
+            --cream: #f5f3eb;
+            --pink: #f1c7d6;
+            --pink-dark: #e6b8cb;
+            --teal: #0a3b44;
+            --teal-dark: #053139;
+            --gray-light: #f8f9fa;
+            --gray-med: #94a3b8;
+            --gray-dark: #475569;
+            --black: #0f172a;
+            --white: #ffffff;
+            --green: #10b981;
+            --red: #ef4444;
+            --blue: #3b82f6;
+            --yellow: #f59e0b;
+            --border: #e2e8f0;
+        }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--cream);
+            color: var(--black);
+            line-height: 1.5;
+            font-weight: 400;
             min-height: 100vh;
             padding: 20px;
         }
@@ -25,112 +48,142 @@
         
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
         }
         
         .header h1 {
-            font-size: 2.5rem;
-            color: #2c3e50;
-            margin-bottom: 10px;
-            font-weight: 300;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            line-height: 1.1;
+            color: var(--teal-dark);
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
         }
         
         .header p {
-            color: #7f8c8d;
-            font-size: 1.1rem;
+            font-size: 1.25rem;
+            color: var(--gray-dark);
+            font-weight: 400;
         }
         
         .main-grid {
             display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 30px;
+            grid-template-columns: 400px 1fr;
+            gap: 2rem;
             align-items: start;
         }
         
         .controls-panel {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             position: sticky;
             top: 20px;
+            border: 1px solid var(--border);
         }
         
         .preview-panel {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
         }
         
         .control-group {
-            margin-bottom: 25px;
+            margin-bottom: 2rem;
         }
         
         .control-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 0.5rem;
             font-weight: 600;
-            color: #2c3e50;
-            font-size: 14px;
+            color: var(--teal-dark);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         .control-group input[type="file"] {
             width: 100%;
-            padding: 10px;
-            border: 2px dashed #bdc3c7;
+            padding: 1rem;
+            border: 2px dashed var(--border);
             border-radius: 8px;
-            background: #f8f9fa;
+            background: var(--gray-light);
             cursor: pointer;
-            transition: border-color 0.3s;
+            transition: all 0.2s;
+            font-family: 'Space Grotesk', sans-serif;
         }
         
         .control-group input[type="file"]:hover {
-            border-color: #3498db;
+            border-color: var(--teal);
+            background: #f0fdfa;
         }
         
         .control-group input[type="text"] {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
+            padding: 1rem;
+            border: 2px solid var(--border);
             border-radius: 8px;
-            background: white;
-            font-size: 14px;
-            font-family: 'Courier New', monospace;
+            background: var(--white);
+            font-size: 1rem;
+            font-family: 'Space Grotesk', monospace;
+            transition: border-color 0.2s;
+        }
+        
+        .control-group input[type="text"]:focus {
+            outline: none;
+            border-color: var(--teal);
         }
         
         .control-group select {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
+            padding: 1rem;
+            border: 2px solid var(--border);
             border-radius: 8px;
-            background: white;
-            font-size: 14px;
+            background: var(--white);
+            font-size: 1rem;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: border-color 0.2s;
+        }
+        
+        .control-group select:focus {
+            outline: none;
+            border-color: var(--teal);
         }
         
         .control-group input[type="color"] {
             width: 100%;
             height: 45px;
-            border: none;
+            border: 2px solid var(--border);
             border-radius: 8px;
             cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        
+        .control-group input[type="color"]:hover {
+            border-color: var(--teal);
         }
         
         .slider-group {
-            margin-bottom: 20px;
+            margin-bottom: 2rem;
         }
         
         .slider-label {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 0.5rem;
             font-weight: 600;
-            color: #2c3e50;
-            font-size: 14px;
+            color: var(--teal-dark);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         .slider-value {
-            color: #3498db;
+            color: var(--teal);
             font-weight: 700;
         }
         
@@ -138,86 +191,88 @@
             width: 100%;
             height: 6px;
             border-radius: 3px;
-            background: #ecf0f1;
+            background: var(--border);
             outline: none;
             -webkit-appearance: none;
         }
         
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            background: #3498db;
+            background: var(--teal);
             cursor: pointer;
         }
         
         input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            background: #3498db;
+            background: var(--teal);
             cursor: pointer;
             border: none;
         }
         
         .button {
             width: 100%;
-            padding: 14px;
+            padding: 1rem 2rem;
             border: none;
             border-radius: 8px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 1rem;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 12px;
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+            font-family: 'Space Grotesk', sans-serif;
+            white-space: nowrap;
         }
         
         .button-primary {
-            background: #3498db;
-            color: white;
+            background: var(--teal);
+            color: var(--white);
         }
         
         .button-primary:hover {
-            background: #2980b9;
+            background: var(--teal-dark);
             transform: translateY(-1px);
         }
         
         .button-success {
-            background: #27ae60;
-            color: white;
+            background: var(--green);
+            color: var(--white);
         }
         
         .button-success:hover {
-            background: #219a52;
+            background: #059669;
             transform: translateY(-1px);
         }
         
         .button-warning {
-            background: #f39c12;
-            color: white;
+            background: var(--yellow);
+            color: var(--white);
         }
         
         .button-warning:hover {
-            background: #d68910;
+            background: #d97706;
             transform: translateY(-1px);
         }
         
         .button-secondary {
-            background: #95a5a6;
-            color: white;
+            background: var(--gray-med);
+            color: var(--white);
         }
         
         .button-secondary:hover {
-            background: #7f8c8d;
+            background: var(--gray-dark);
             transform: translateY(-1px);
         }
         
         .canvas-container {
-            border: 1px solid #ecf0f1;
-            border-radius: 8px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
             overflow: hidden;
-            background: #f8f9fa;
+            background: var(--gray-light);
         }
         
         canvas {
@@ -227,26 +282,26 @@
         }
         
         .image-info {
-            background: #d5edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            margin-top: 8px;
+            background: #ecfdf5;
+            border: 1px solid #bbf7d0;
+            color: #059669;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
         }
         
         .code-output {
-            background: #2c3e50;
+            background: var(--teal-dark);
             color: #ecf0f1;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
+            padding: 1.5rem;
+            border-radius: 12px;
+            font-family: 'Space Grotesk', monospace;
+            font-size: 0.875rem;
             white-space: pre-wrap;
             max-height: 400px;
             overflow-y: auto;
-            margin-top: 30px;
+            margin-top: 2rem;
             display: none;
         }
         
@@ -254,28 +309,35 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 1rem;
         }
         
         .code-title {
-            color: #3498db;
+            color: var(--white);
             font-weight: 600;
+            font-size: 1rem;
         }
         
         .copy-button {
-            background: #27ae60;
-            color: white;
+            background: var(--green);
+            color: var(--white);
             border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 11px;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
             cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .copy-button:hover {
+            background: #059669;
         }
         
         .option-divider {
-            margin: 30px 0;
-            padding: 20px 0;
-            border-top: 2px solid #ecf0f1;
+            margin: 2rem 0;
+            padding: 1.5rem 0;
+            border-top: 2px solid var(--border);
             position: relative;
         }
         
@@ -285,29 +347,63 @@
             top: -12px;
             left: 50%;
             transform: translateX(-50%);
-            background: white;
-            color: #7f8c8d;
-            padding: 0 15px;
+            background: var(--white);
+            color: var(--gray-med);
+            padding: 0 1rem;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 0.875rem;
         }
         
         .option-title {
-            color: #2c3e50;
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 15px;
+            color: var(--teal-dark);
+            font-weight: 700;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
             text-align: center;
+            letter-spacing: -0.01em;
         }
         
         .helper-text {
-            font-size: 12px;
-            color: #7f8c8d;
-            margin-top: 5px;
+            font-size: 0.875rem;
+            color: var(--gray-med);
+            margin-top: 0.5rem;
             font-style: italic;
         }
         
-        @media (max-width: 768px) {
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .preview-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--teal-dark);
+            letter-spacing: -0.01em;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+        
+        .status-badge.image {
+            background: #dbeafe;
+            color: var(--blue);
+        }
+        
+        .status-badge.pattern {
+            background: #dcfce7;
+            color: var(--green);
+        }
+        
+        @media (max-width: 1024px) {
             .main-grid {
                 grid-template-columns: 1fr;
             }
@@ -317,7 +413,29 @@
             }
             
             .header h1 {
+                font-size: 2.5rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .controls-panel,
+            .preview-panel {
+                padding: 2rem;
+            }
+            
+            .header h1 {
                 font-size: 2rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .controls-panel,
+            .preview-panel {
+                padding: 1.5rem;
             }
         }
     </style>
@@ -402,7 +520,11 @@
             </div>
             
             <div class="preview-panel">
-                <h2 style="margin-bottom: 20px; color: #2c3e50;">Preview</h2>
+                <div class="preview-header">
+                    <h2 class="preview-title">Preview</h2>
+                    <div class="status-badge" id="previewStatus">Pattern</div>
+                </div>
+                
                 <div class="canvas-container">
                     <canvas id="previewCanvas" width="800" height="500"></canvas>
                     <canvas id="hiddenCanvas" style="display: none;"></canvas>
@@ -430,6 +552,7 @@
         
         // Global state
         let uploadedImage = null;
+        let processedImageData = null; // Store processed image data for code generation
         let currentSettings = {
             characterSet: 'default',
             color: '#000000',
@@ -465,6 +588,8 @@
                         uploadedImage = img;
                         document.getElementById('imageInfo').style.display = 'block';
                         document.getElementById('imageInfo').textContent = `✓ Image loaded: ${img.width}×${img.height}px`;
+                        document.getElementById('previewStatus').textContent = 'Image';
+                        document.getElementById('previewStatus').className = 'status-badge image';
                         drawPreview();
                     };
                     img.src = e.target.result;
@@ -528,7 +653,20 @@
                 
                 const imageData = hiddenCtx.getImageData(0, 0, canvas.width, canvas.height);
                 
-                // Convert to ASCII
+                // Store processed data for code generation
+                processedImageData = {
+                    width: canvas.width,
+                    height: canvas.height,
+                    spacing: spacing,
+                    aspectRatio: aspectRatio,
+                    drawWidth: drawWidth,
+                    drawHeight: drawHeight,
+                    drawX: drawX,
+                    drawY: drawY
+                };
+                
+                // Convert to ASCII and store character positions
+                const asciiMap = [];
                 for (let y = 0; y < canvas.height - currentSettings.fontSize; y += spacing) {
                     for (let x = 0; x < canvas.width - currentSettings.fontSize; x += spacing) {
                         let totalBrightness = 0;
@@ -557,13 +695,24 @@
                                 const char = chars[Math.max(0, Math.min(chars.length - 1, charIndex))];
                                 if (char && char !== ' ') {
                                     ctx.fillText(char, x, y);
+                                    // Store for code generation
+                                    asciiMap.push({
+                                        x: x / canvas.width, // Store as relative positions
+                                        y: y / canvas.height,
+                                        char: char,
+                                        intensity: intensity
+                                    });
                                 }
                             }
                         }
                     }
                 }
+                
+                // Store ASCII map for code generation
+                processedImageData.asciiMap = asciiMap;
             } else {
                 // Default circular pattern
+                processedImageData = null;
                 for (let y = 0; y < canvas.height - currentSettings.fontSize; y += spacing) {
                     for (let x = 0; x < canvas.width - currentSettings.fontSize; x += spacing) {
                         const centerX = canvas.width / 2;
@@ -726,24 +875,34 @@
     
     console.log('ASCII Dithering Background loaded');`;
             
-            return `// ASCII Dithering Background - ${isElement ? 'Element Specific' : 'Full Page'} Version
-// Generated for ${isElement ? targetSelector : 'full page background'}
-
-(function() {
-    'use strict';
-    
-    // Configuration
-    const config = {
-        chars: ${JSON.stringify(chars)},
-        fontSize: ${currentSettings.fontSize},
-        color: '${currentSettings.color}',
-        spacing: ${spacing.toFixed(1)},
-        zIndex: ${isElement ? '0' : '-1000'},
-        opacity: ${isElement ? '0.15' : '0.3'}
-    };${elementSpecificCode}${canvasSetup}
-    
-    const ctx = canvas.getContext('2d');${resizeFunction}
-    
+            // Generate draw function based on whether we have processed image data
+            let drawFunction;
+            
+            if (processedImageData && processedImageData.asciiMap) {
+                // Generate code for uploaded image
+                const asciiMapString = JSON.stringify(processedImageData.asciiMap, null, 8);
+                drawFunction = `
+    function draw() {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.font = config.fontSize + 'px monospace';
+        ctx.fillStyle = config.color;
+        ctx.textBaseline = 'top';
+        
+        // ASCII map generated from uploaded image
+        const asciiMap = ${asciiMapString};
+        
+        // Draw characters at relative positions
+        for (const charData of asciiMap) {
+            const x = charData.x * canvas.width;
+            const y = charData.y * canvas.height;
+            ctx.fillText(charData.char, x, y);
+        }
+    }`;
+            } else {
+                // Generate code for default circular pattern
+                drawFunction = `
     function draw() {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -770,7 +929,27 @@
                 }
             }
         }
-    }
+    }`;
+            }
+            
+            return `// ASCII Dithering Background - ${isElement ? 'Element Specific' : 'Full Page'} Version
+// Generated for ${isElement ? targetSelector : 'full page background'}
+${processedImageData ? '// Based on uploaded image' : '// Using default circular pattern'}
+
+(function() {
+    'use strict';
+    
+    // Configuration
+    const config = {
+        chars: ${JSON.stringify(chars)},
+        fontSize: ${currentSettings.fontSize},
+        color: '${currentSettings.color}',
+        spacing: ${spacing.toFixed(1)},
+        zIndex: ${isElement ? '0' : '-1000'},
+        opacity: ${isElement ? '0.15' : '0.3'}
+    };${elementSpecificCode}${canvasSetup}
+    
+    const ctx = canvas.getContext('2d');${resizeFunction}${drawFunction}
     
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', resize);
@@ -785,7 +964,8 @@
         function downloadFullPageJS() {
             generateFullPageCode();
             const code = document.getElementById('codeContent').textContent;
-            downloadFile(code, 'ascii-background-fullpage.js');
+            const filename = processedImageData ? 'ascii-background-image-fullpage.js' : 'ascii-background-pattern-fullpage.js';
+            downloadFile(code, filename);
         }
         
         function downloadElementJS() {
@@ -797,7 +977,8 @@
             
             generateElementCode();
             const code = document.getElementById('codeContent').textContent;
-            const fileName = `ascii-background-element-${targetEl.replace(/[^a-zA-Z0-9]/g, '-')}.js`;
+            const baseFilename = processedImageData ? 'image' : 'pattern';
+            const fileName = `ascii-background-${baseFilename}-element-${targetEl.replace(/[^a-zA-Z0-9]/g, '-')}.js`;
             downloadFile(code, fileName);
         }
         
@@ -815,7 +996,8 @@
             canvas.toBlob((blob) => {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = `ascii-pattern-${Date.now()}.png`;
+                const filename = processedImageData ? `ascii-image-pattern-${Date.now()}.png` : `ascii-default-pattern-${Date.now()}.png`;
+                link.download = filename;
                 link.href = url;
                 link.click();
                 URL.revokeObjectURL(url);
