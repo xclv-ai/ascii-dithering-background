@@ -273,6 +273,7 @@
             border-radius: 12px;
             overflow: hidden;
             background: var(--gray-light);
+            position: relative;
         }
         
         canvas {
@@ -300,6 +301,16 @@
             font-size: 0.875rem;
             margin-top: 0.5rem;
             display: none;
+        }
+        
+        .resolution-info {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            color: #d97706;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
         }
         
         .code-output {
@@ -414,6 +425,11 @@
             color: var(--green);
         }
         
+        .status-badge.hd {
+            background: #fef3c7;
+            color: var(--yellow);
+        }
+        
         @media (max-width: 1024px) {
             .main-grid {
                 grid-template-columns: 1fr;
@@ -485,17 +501,17 @@
                 <div class="slider-group">
                     <div class="slider-label">
                         <span>Density</span>
-                        <span class="slider-value" id="densityValue">50%</span>
+                        <span class="slider-value" id="densityValue">70%</span>
                     </div>
-                    <input type="range" id="densitySlider" min="20" max="100" value="50">
+                    <input type="range" id="densitySlider" min="30" max="100" value="70">
                 </div>
                 
                 <div class="slider-group">
                     <div class="slider-label">
                         <span>Font Size</span>
-                        <span class="slider-value" id="fontSizeValue">8px</span>
+                        <span class="slider-value" id="fontSizeValue">6px</span>
                     </div>
-                    <input type="range" id="fontSizeSlider" min="4" max="16" value="8">
+                    <input type="range" id="fontSizeSlider" min="3" max="12" value="6">
                 </div>
                 
                 <div class="option-title">🌍 Full Page Background</div>
@@ -534,12 +550,16 @@
             <div class="preview-panel">
                 <div class="preview-header">
                     <h2 class="preview-title">Preview</h2>
-                    <div class="status-badge pattern" id="previewStatus">Pattern</div>
+                    <div class="status-badge hd" id="previewStatus">HD Pattern</div>
                 </div>
                 
                 <div class="canvas-container">
-                    <canvas id="previewCanvas" width="1200" height="750"></canvas>
+                    <canvas id="previewCanvas" width="2400" height="1500"></canvas>
                     <canvas id="hiddenCanvas" style="display: none;"></canvas>
+                </div>
+                
+                <div class="resolution-info">
+                    🔍 <strong>High Resolution:</strong> 2400×1500px with Retina DPI scaling for crisp preview and output
                 </div>
                 
                 <div id="codeOutput" class="code-output">
@@ -568,16 +588,35 @@
         let currentSettings = {
             characterSet: 'default',
             color: '#000000',
-            density: 50,
-            fontSize: 8,
+            density: 70, // Increased default density
+            fontSize: 6, // Reduced default font size for higher density
             targetElement: '.input-section'
         };
         
-        // Canvas elements
+        // Canvas elements with high DPI support
         const canvas = document.getElementById('previewCanvas');
         const ctx = canvas.getContext('2d');
         const hiddenCanvas = document.getElementById('hiddenCanvas');
         const hiddenCtx = hiddenCanvas.getContext('2d');
+        
+        // High DPI support
+        const dpr = window.devicePixelRatio || 1;
+        
+        function setupHighDPICanvas(canvas, ctx, width, height) {
+            // Set actual canvas size
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            
+            // Set display size
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            
+            // Scale context for DPI
+            ctx.scale(dpr, dpr);
+        }
+        
+        // Setup high DPI for main canvas
+        setupHighDPICanvas(canvas, ctx, 2400, 1500);
         
         // Initialize
         drawPreview();
@@ -600,7 +639,7 @@
                         uploadedImage = img;
                         document.getElementById('imageInfo').style.display = 'block';
                         document.getElementById('imageInfo').textContent = `✓ Image loaded: ${img.width}×${img.height}px`;
-                        document.getElementById('previewStatus').textContent = 'Image';
+                        document.getElementById('previewStatus').textContent = 'HD Image';
                         document.getElementById('previewStatus').className = 'status-badge image';
                         
                         // Process and compress image
@@ -616,57 +655,63 @@
         function compressImageData() {
             if (!uploadedImage) return;
             
-            // Use a sampling grid for compression
-            const sampleWidth = 64; // Sample points across width
-            const sampleHeight = 64; // Sample points across height
+            // Use a higher sampling grid for better quality
+            const sampleWidth = 128; // Increased from 64
+            const sampleHeight = 128; // Increased from 64
             
-            // Setup hidden canvas for sampling
-            hiddenCanvas.width = canvas.width;
-            hiddenCanvas.height = canvas.height;
+            // Setup hidden canvas for sampling at full resolution
+            const canvasWidth = 2400;
+            const canvasHeight = 1500;
+            
+            hiddenCanvas.width = canvasWidth * dpr;
+            hiddenCanvas.height = canvasHeight * dpr;
+            hiddenCanvas.style.width = canvasWidth + 'px';
+            hiddenCanvas.style.height = canvasHeight + 'px';
+            hiddenCtx.scale(dpr, dpr);
             
             // Draw image maintaining aspect ratio
             const aspectRatio = uploadedImage.width / uploadedImage.height;
-            const canvasRatio = canvas.width / canvas.height;
+            const canvasRatio = canvasWidth / canvasHeight;
             
             let drawWidth, drawHeight, drawX, drawY;
             if (aspectRatio > canvasRatio) {
-                drawWidth = canvas.width;
-                drawHeight = canvas.width / aspectRatio;
+                drawWidth = canvasWidth;
+                drawHeight = canvasWidth / aspectRatio;
                 drawX = 0;
-                drawY = (canvas.height - drawHeight) / 2;
+                drawY = (canvasHeight - drawHeight) / 2;
             } else {
-                drawWidth = canvas.height * aspectRatio;
-                drawHeight = canvas.height;
-                drawX = (canvas.width - drawWidth) / 2;
+                drawWidth = canvasHeight * aspectRatio;
+                drawHeight = canvasHeight;
+                drawX = (canvasWidth - drawWidth) / 2;
                 drawY = 0;
             }
             
             hiddenCtx.fillStyle = '#ffffff';
-            hiddenCtx.fillRect(0, 0, canvas.width, canvas.height);
+            hiddenCtx.fillRect(0, 0, canvasWidth, canvasHeight);
             hiddenCtx.drawImage(uploadedImage, drawX, drawY, drawWidth, drawHeight);
             
-            const imageData = hiddenCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const imageData = hiddenCtx.getImageData(0, 0, canvasWidth * dpr, canvasHeight * dpr);
             
-            // Create compressed brightness map
+            // Create compressed brightness map with higher resolution sampling
             const brightnessMap = [];
-            const stepX = canvas.width / sampleWidth;
-            const stepY = canvas.height / sampleHeight;
+            const stepX = (canvasWidth * dpr) / sampleWidth;
+            const stepY = (canvasHeight * dpr) / sampleHeight;
             
             for (let gy = 0; gy < sampleHeight; gy++) {
                 for (let gx = 0; gx < sampleWidth; gx++) {
                     const centerX = Math.floor(gx * stepX + stepX / 2);
                     const centerY = Math.floor(gy * stepY + stepY / 2);
                     
-                    // Sample area around center point
+                    // Sample larger area for smoother results
                     let totalBrightness = 0;
                     let pixelCount = 0;
-                    const sampleRadius = Math.max(1, Math.floor(Math.min(stepX, stepY) / 4));
+                    const sampleRadius = Math.max(2, Math.floor(Math.min(stepX, stepY) / 6));
                     
                     for (let dy = -sampleRadius; dy <= sampleRadius; dy++) {
                         for (let dx = -sampleRadius; dx <= sampleRadius; dx++) {
-                            const px = Math.max(0, Math.min(canvas.width - 1, centerX + dx));
-                            const py = Math.max(0, Math.min(canvas.height - 1, centerY + dy));
-                            const index = (py * canvas.width + px) * 4;
+                            const px = Math.max(0, Math.min(canvasWidth * dpr - 1, centerX + dx));
+                            const py = Math.max(0, Math.min(canvasHeight * dpr - 1, centerY + dy));
+                            const index = (py * canvasWidth * dpr + px) * 4;
                             
                             const r = imageData.data[index] || 0;
                             const g = imageData.data[index + 1] || 0;
@@ -679,12 +724,12 @@
                     const avgBrightness = totalBrightness / pixelCount;
                     const intensity = 1 - (avgBrightness / 255); // Invert for ASCII
                     
-                    // Only store significant brightness points
-                    if (intensity > 0.05) {
+                    // Store more points for better quality (lower threshold)
+                    if (intensity > 0.03) {
                         brightnessMap.push({
                             x: gx / (sampleWidth - 1), // Normalized coordinates
                             y: gy / (sampleHeight - 1),
-                            i: Math.round(intensity * 100) / 100 // Rounded intensity
+                            i: Math.round(intensity * 1000) / 1000 // Higher precision
                         });
                     }
                 }
@@ -698,10 +743,10 @@
             const originalSize = sampleWidth * sampleHeight;
             const compressedSize = brightnessMap.length;
             const compressionRatio = Math.round((compressedSize / originalSize) * 100);
-            const estimatedFileSize = Math.round(JSON.stringify(brightnessMap).length / 1024 * 1.5); // Rough JS size estimate
+            const estimatedFileSize = Math.round(JSON.stringify(brightnessMap).length / 1024 * 1.8); // More accurate estimate
             
             compressionInfo.innerHTML = `
-                ⚡ Compressed: ${compressedSize}/${originalSize} points (${compressionRatio}%)<br>
+                ⚡ HD Compressed: ${compressedSize}/${originalSize} points (${compressionRatio}%)<br>
                 📦 Estimated JS size: ~${estimatedFileSize}KB
             `;
         }
@@ -723,15 +768,16 @@
         function drawPreview() {
             // Clear canvas
             ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, 2400, 1500);
             
-            // Set font
+            // Set font with proper scaling
             ctx.font = currentSettings.fontSize + 'px monospace';
             ctx.fillStyle = currentSettings.color;
             ctx.textBaseline = 'top';
             
             const chars = charSets[currentSettings.characterSet];
-            const spacing = Math.max(4, 20 - (currentSettings.density * 0.16));
+            // Improved spacing calculation for higher density
+            const spacing = Math.max(2.5, 15 - (currentSettings.density * 0.12));
             
             if (compressedImageData) {
                 // Render from compressed image data
@@ -743,15 +789,15 @@
         }
         
         function renderFromCompressedData(chars, spacing) {
-            // Use bilinear interpolation for smooth rendering
-            for (let y = 0; y < canvas.height - currentSettings.fontSize; y += spacing) {
-                for (let x = 0; x < canvas.width - currentSettings.fontSize; x += spacing) {
-                    const normalizedX = x / canvas.width;
-                    const normalizedY = y / canvas.height;
+            // Higher resolution rendering with smooth interpolation
+            for (let y = 0; y < 1500 - currentSettings.fontSize; y += spacing) {
+                for (let x = 0; x < 2400 - currentSettings.fontSize; x += spacing) {
+                    const normalizedX = x / 2400;
+                    const normalizedY = y / 1500;
                     
                     const intensity = interpolateBrightness(normalizedX, normalizedY);
                     
-                    if (intensity > 0.1) {
+                    if (intensity > 0.08) { // Lower threshold for more detail
                         const charIndex = Math.floor(intensity * (chars.length - 1));
                         const char = chars[Math.max(0, Math.min(chars.length - 1, charIndex))];
                         if (char && char !== ' ') {
@@ -765,42 +811,42 @@
         function interpolateBrightness(x, y) {
             if (!compressedImageData || compressedImageData.length === 0) return 0;
             
-            // Find nearest sample points for interpolation
-            let minDist = Infinity;
-            let closestIntensity = 0;
-            
-            // Simple distance-weighted interpolation
+            // Improved interpolation with better distance weighting
             let totalWeight = 0;
             let weightedIntensity = 0;
+            const maxInfluenceDistance = 0.1; // Influence radius
             
             for (const point of compressedImageData) {
                 const dx = x - point.x;
                 const dy = y - point.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                if (distance < 0.01) {
+                if (distance < 0.005) {
                     // Very close, use direct value
                     return point.i;
                 }
                 
-                const weight = 1 / (1 + distance * 10); // Inverse distance weighting
-                totalWeight += weight;
-                weightedIntensity += point.i * weight;
+                if (distance <= maxInfluenceDistance) {
+                    // Smoother weight function for better gradients
+                    const weight = Math.pow(1 - (distance / maxInfluenceDistance), 2);
+                    totalWeight += weight;
+                    weightedIntensity += point.i * weight;
+                }
             }
             
             return totalWeight > 0 ? weightedIntensity / totalWeight : 0;
         }
         
         function renderCircularPattern(chars, spacing) {
-            for (let y = 0; y < canvas.height - currentSettings.fontSize; y += spacing) {
-                for (let x = 0; x < canvas.width - currentSettings.fontSize; x += spacing) {
-                    const centerX = canvas.width / 2;
-                    const centerY = canvas.height / 2;
+            for (let y = 0; y < 1500 - currentSettings.fontSize; y += spacing) {
+                for (let x = 0; x < 2400 - currentSettings.fontSize; x += spacing) {
+                    const centerX = 2400 / 2;
+                    const centerY = 1500 / 2;
                     const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
                     const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
                     const intensity = Math.max(0, 1 - (distance / maxDistance));
                     
-                    if (intensity > 0.2) {
+                    if (intensity > 0.15) { // Lower threshold for more detail
                         const charIndex = Math.floor(intensity * (chars.length - 1));
                         const char = chars[Math.max(0, Math.min(chars.length - 1, charIndex))];
                         if (char && char !== ' ') {
@@ -813,7 +859,7 @@
         
         function generateFullPageCode() {
             const chars = charSets[currentSettings.characterSet];
-            const spacing = Math.max(4, 20 - (currentSettings.density * 0.16));
+            const spacing = Math.max(2.5, 15 - (currentSettings.density * 0.12));
             
             const jsCode = generateBaseCode(chars, spacing, false);
             
@@ -831,7 +877,7 @@
             }
             
             const chars = charSets[currentSettings.characterSet];
-            const spacing = Math.max(4, 20 - (currentSettings.density * 0.16));
+            const spacing = Math.max(2.5, 15 - (currentSettings.density * 0.12));
             
             const jsCode = generateBaseCode(chars, spacing, true, targetEl);
             
@@ -863,7 +909,7 @@
     }`;
             
             const canvasSetup = isElement ? `
-    // Create canvas for element
+    // Create high-DPI canvas for element
     const canvas = document.createElement('canvas');
     canvas.id = 'ascii-element-bg';
     canvas.style.cssText = \`
@@ -884,7 +930,7 @@
     
     // Insert canvas into target element
     targetElement.insertBefore(canvas, targetElement.firstChild);` : `
-    // Create canvas for full page
+    // Create high-DPI canvas for full page
     const canvas = document.createElement('canvas');
     canvas.id = 'ascii-dithering-bg';
     canvas.style.cssText = \`
@@ -901,15 +947,34 @@
     document.body.insertBefore(canvas, document.body.firstChild);`;
             
             const resizeFunction = isElement ? `
+    // High-DPI resize function
     function resize() {
-        canvas.width = targetElement.offsetWidth;
-        canvas.height = targetElement.offsetHeight;
-        draw();
+        const dpr = window.devicePixelRatio || 1;
+        const rect = targetElement.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        
+        ctx.scale(dpr, dpr);
+        draw(width, height);
     }` : `
+    // High-DPI resize function
     function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        draw();
+        const dpr = window.devicePixelRatio || 1;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        
+        ctx.scale(dpr, dpr);
+        draw(width, height);
     }`;
             
             const controlObject = isElement ? `
@@ -931,13 +996,13 @@
         },
         updateConfig: function(newConfig) {
             Object.assign(config, newConfig);
-            draw();
+            resize(); // Redraw with new config
         },
         element: targetElement,
         canvas: canvas
     };
     
-    console.log('ASCII Background loaded for ${targetSelector}. Control via window[' + controlName + ']');` : `
+    console.log('High-DPI ASCII Background loaded for ${targetSelector}. Control via window[' + controlName + ']');` : `
     // Global control object
     window.ASCIIDithering = {
         remove: function() {
@@ -955,65 +1020,68 @@
         },
         updateConfig: function(newConfig) {
             Object.assign(config, newConfig);
-            draw();
+            resize(); // Redraw with new config
         }
     };
     
-    console.log('ASCII Dithering Background loaded');`;
+    console.log('High-DPI ASCII Dithering Background loaded');`;
             
             // Generate draw function based on whether we have compressed image data
             let drawFunction;
             
             if (compressedImageData && compressedImageData.length > 0) {
-                // Generate code for compressed image data
+                // Generate code for compressed image data with HD support
                 const compressedDataString = JSON.stringify(compressedImageData);
                 drawFunction = `
-    // Interpolation function for smooth brightness transitions
-    function interpolateBrightness(x, y, imageData) {
+    // High-quality interpolation function for smooth brightness transitions
+    function interpolateBrightness(x, y, imageData, canvasWidth, canvasHeight) {
         if (!imageData || imageData.length === 0) return 0;
+        
+        const normalizedX = x / canvasWidth;
+        const normalizedY = y / canvasHeight;
         
         let totalWeight = 0;
         let weightedIntensity = 0;
+        const maxInfluenceDistance = 0.1;
         
         for (const point of imageData) {
-            const dx = x - point.x;
-            const dy = y - point.y;
+            const dx = normalizedX - point.x;
+            const dy = normalizedY - point.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
-            if (distance < 0.01) {
+            if (distance < 0.005) {
                 return point.i;
             }
             
-            const weight = 1 / (1 + distance * 10);
-            totalWeight += weight;
-            weightedIntensity += point.i * weight;
+            if (distance <= maxInfluenceDistance) {
+                const weight = Math.pow(1 - (distance / maxInfluenceDistance), 2);
+                totalWeight += weight;
+                weightedIntensity += point.i * weight;
+            }
         }
         
         return totalWeight > 0 ? weightedIntensity / totalWeight : 0;
     }
     
-    function draw() {
+    function draw(canvasWidth, canvasHeight) {
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
         
         ctx.font = config.fontSize + 'px monospace';
         ctx.fillStyle = config.color;
         ctx.textBaseline = 'top';
         
-        // Compressed image brightness data
+        // HD compressed image brightness data
         const imageData = ${compressedDataString};
         
-        const spacing = Math.max(4, 20 - (config.density * 0.16));
+        const spacing = Math.max(2.5, 15 - (config.density * 0.12));
         
         // Render using interpolated brightness values
-        for (let y = 0; y < canvas.height - config.fontSize; y += spacing) {
-            for (let x = 0; x < canvas.width - config.fontSize; x += spacing) {
-                const normalizedX = x / canvas.width;
-                const normalizedY = y / canvas.height;
+        for (let y = 0; y < canvasHeight - config.fontSize; y += spacing) {
+            for (let x = 0; x < canvasWidth - config.fontSize; x += spacing) {
+                const intensity = interpolateBrightness(x, y, imageData, canvasWidth, canvasHeight);
                 
-                const intensity = interpolateBrightness(normalizedX, normalizedY, imageData);
-                
-                if (intensity > 0.1) {
+                if (intensity > 0.08) {
                     const charIndex = Math.floor(intensity * (config.chars.length - 1));
                     const char = config.chars[Math.max(0, Math.min(config.chars.length - 1, charIndex))];
                     if (char && char !== ' ') {
@@ -1024,27 +1092,27 @@
         }
     }`;
             } else {
-                // Generate code for default circular pattern
+                // Generate code for default circular pattern with HD support
                 drawFunction = `
-    function draw() {
+    function draw(canvasWidth, canvasHeight) {
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
         
         ctx.font = config.fontSize + 'px monospace';
         ctx.fillStyle = config.color;
         ctx.textBaseline = 'top';
         
-        const spacing = Math.max(4, 20 - (config.density * 0.16));
+        const spacing = Math.max(2.5, 15 - (config.density * 0.12));
         
-        for (let y = 0; y < canvas.height - config.fontSize; y += spacing) {
-            for (let x = 0; x < canvas.width - config.fontSize; x += spacing) {
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
+        for (let y = 0; y < canvasHeight - config.fontSize; y += spacing) {
+            for (let x = 0; x < canvasWidth - config.fontSize; x += spacing) {
+                const centerX = canvasWidth / 2;
+                const centerY = canvasHeight / 2;
                 const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
                 const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
                 const intensity = Math.max(0, 1 - (distance / maxDistance));
                 
-                if (intensity > 0.2) {
+                if (intensity > 0.15) {
                     const charIndex = Math.floor(intensity * (config.chars.length - 1));
                     const char = config.chars[Math.max(0, Math.min(config.chars.length - 1, charIndex))];
                     
@@ -1059,8 +1127,8 @@
             
             return `// ASCII Dithering Background - ${isElement ? 'Element Specific' : 'Full Page'} Version
 // Generated for ${isElement ? targetSelector : 'full page background'}
-${compressedImageData ? '// Based on uploaded image with smart compression' : '// Using default circular pattern'}
-// Resolution-independent with full runtime control
+${compressedImageData ? '// Based on uploaded image with HD compression' : '// Using default circular pattern'}
+// High-DPI optimized with full runtime control
 
 (function() {
     'use strict';
@@ -1090,7 +1158,7 @@ ${compressedImageData ? '// Based on uploaded image with smart compression' : '/
         function downloadFullPageJS() {
             generateFullPageCode();
             const code = document.getElementById('codeContent').textContent;
-            const filename = compressedImageData ? 'ascii-background-image-fullpage.js' : 'ascii-background-pattern-fullpage.js';
+            const filename = compressedImageData ? 'ascii-background-hd-image-fullpage.js' : 'ascii-background-hd-pattern-fullpage.js';
             downloadFile(code, filename);
         }
         
@@ -1103,7 +1171,7 @@ ${compressedImageData ? '// Based on uploaded image with smart compression' : '/
             
             generateElementCode();
             const code = document.getElementById('codeContent').textContent;
-            const baseFilename = compressedImageData ? 'image' : 'pattern';
+            const baseFilename = compressedImageData ? 'hd-image' : 'hd-pattern';
             const fileName = `ascii-background-${baseFilename}-element-${targetEl.replace(/[^a-zA-Z0-9]/g, '-')}.js`;
             downloadFile(code, fileName);
         }
@@ -1122,7 +1190,7 @@ ${compressedImageData ? '// Based on uploaded image with smart compression' : '/
             canvas.toBlob((blob) => {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                const filename = compressedImageData ? `ascii-image-pattern-${Date.now()}.png` : `ascii-default-pattern-${Date.now()}.png`;
+                const filename = compressedImageData ? `ascii-hd-image-pattern-${Date.now()}.png` : `ascii-hd-pattern-${Date.now()}.png`;
                 link.download = filename;
                 link.href = url;
                 link.click();
